@@ -8,6 +8,7 @@ The current plan for topics to cover is:
   - When should we create an R package?
   - How should we create an R package?
   - Tour of an R package structure
+  - Debugging an R package
   - Basics of functions and S3 classes
   - Basics of git
   - Introduction to unit tests and R CMD check
