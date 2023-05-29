@@ -29,7 +29,7 @@ PURL = @Rscript -e "knitr::purl('$<', documentation = 2L, output = paste0(tools:
 .PHONY: html
 .PHONY: all
 	
-all: 	$(PDF) $(HTML) $(R)
+all: 	$(PDF) $(HTML)
 pdf:	$(PDF)
 html:	$(HTML)
 r: $(R)

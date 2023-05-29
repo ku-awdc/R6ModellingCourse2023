@@ -1,6 +1,6 @@
 ---
 title: Session 1
-subtitle: R package deveopment
+subtitle: R package development
 date: "2023-05-17"
 author:
   - Matt Denwood
@@ -63,7 +63,7 @@ Everything is on the public GitHub repo - to get the material:
 
 1. Install GitHub Desktop from https://desktop.github.com (unless you already have it), open it, and log in with your GitHub credentials (unless you have already done so)
 
-1. Choose "File" and "Clone Repository"
+1. Choose "File" and "Clone Repository" and the "GitHub.com" tab
 
 1. Enter ku-awdc/R6ModellingCourse2023 and click on Clone
 
@@ -322,20 +322,29 @@ Debugging functions (and R6 methods) in an R package is a little different to de
 
 . . .
 
-2. Assign to the global environment using <<- for a temporary look at your objects within functions
+2. Use a step-through debugger:
 
-. . .
+  - Place a call to browser() in a specific location and re-install
+  - Use debug(foo) to step through foo (set undebug(foo) afterwards)
+  - See also ?traceback ?dump.frames ?trace
 
-3. Use browser() as a step-through debugger
+---
 
-. . .
+3. To recover any future error use:
 
-4. Use options(error = utils::recover)
+  - Interactive sessions:
+      - options(error = utils::recover)
+      
+  - Non-interactive sessions:  
+      - options(error = quote({dump.frames(to.file = TRUE); q(status = 1)}))
 
-. . .
+. . . 
 
 [Demo]
 
+. . .
+
+See also:  https://adv-r.hadley.nz/debugging.html
 
 
 ## Checking and building an R package

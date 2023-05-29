@@ -1,0 +1,568 @@
+---
+title: Session 2
+subtitle: Programming in R
+date: "2023-05-31"
+author:
+  - Matt Denwood
+theme: metropolis
+aspectratio: 169
+colortheme: seahorse
+header-includes: 
+  - \input{../rsc/preamble}
+params:
+  presentation: TRUE
+output:
+  beamer_presentation:
+      pandoc_args: ["-t", "beamer"]
+      slide_level: 2
+  html_document: default
+---
+
+```{r rendering, eval=FALSE, include=FALSE}
+# To render this as PDF (beamer) slides run:
+rmarkdown::render('Session_2.Rmd', 'beamer_presentation', params=list(presentation=TRUE))
+# And for html:
+rmarkdown::render('Session_2.Rmd', 'html_document', params=list(presentation=FALSE))
+```
+
+```{r setup, include=FALSE}
+set.seed(2023-05-31)
+
+# Reduce the width of R code output for PDF only:
+if(params$presentation) options(width=60)
+knitr::opts_chunk$set(echo = TRUE)
+
+# Reduce font size of R code output for Beamer:
+if(params$presentation){
+  knitr::knit_hooks$set(size = function(before, options, envir) {
+    if(before){
+      knitr::asis_output(paste0("\\", options$size))
+    }else{
+      knitr::asis_output("\\normalsize")
+    }
+  })
+  knitr::opts_chunk$set(size = "scriptsize")
+}
+
+# Collapse successive chunks:
+space_collapse <- function(x){ gsub("```\n*```r*\n*", "", x) }
+# Reduce space between chunks:
+space_reduce <- function(x){ gsub("```\n+```\n", "", x) }
+knitr::knit_hooks$set(document = space_collapse)
+
+# To collect temporary filenames:
+cleanup <- character(0)
+```
+
+
+# Recap
+
+## Material
+
+Everything is on the public GitHub repo:
+
+1. Use GitHub Desktop (https://desktop.github.com)
+
+1. Choose "File" and "Clone Repository" and the "GitHub.com" tab
+
+1. Enter ku-awdc/R6ModellingCourse2023 and click on Clone
+
+1. Remember to pull changes before each day, as things will be added
+
+. . .
+
+You only have write access, so you can't push changes.  It is best not to modify anything in the course files (notes etc) in case you get conflicts pulling changes later...
+
+
+## R packages
+
+You should create an R package for (almost) every project.
+
+1. Create the repository on github.com (with a README)
+
+2. Use the neatpkg package:
+
+```{r eval=FALSE}
+install.packages("neatpkg", repos=c("https://cran.rstudio.com/","https://ku-awdc.github.io/drat/"))
+
+neatpkg::pkg_new("name")
+```
+
+3. Push changes regularly
+
+
+## Variable names
+
+- Use snake_case for functions and variables
+  - Function arguments count as variables
+  - R has first-class functions, so functions (and methods) are also variables...
+  - Don't re-use the name of the package as a function name
+
+. . .
+
+- Use PascalCase for:
+  - Class names (S3, R6, and Rcpp)
+  - Columns within data frames (to avoid clashes with variables)
+  - Probably also element names within lists (because data frames are lists, and we like consistency)
+
+. . .
+
+- Use dot.separated names if:
+  - You deliberately want to create confusion for S3 method dispatch, for some reason
+  - You want to make it clear that I have not contributed in any way to your code base
+
+
+## Debugging an R package
+
+Debugging functions (and R6 methods) in an R package is a little different to debugging a normal script.
+
+1. Be a defensive programmer
+  - Always use curlies {} around if() and else if() etc
+  - Use stopifnot() and stop() *liberally*
+
+. . .
+
+2. Use a step-through debugger:
+
+  - Place a call to browser() in a specific location and re-install
+  - Use debug(foo) to step through foo (set undebug(foo) afterwards)
+  - See also ?traceback ?dump.frames ?trace
+
+---
+
+3. To recover any future error use:
+
+  - Interactive sessions:
+      - options(error = utils::recover)
+      
+  - Non-interactive sessions:  
+      - options(error = quote({dump.frames(to.file = TRUE); q(status = 1)}))
+
+. . . 
+
+See also:  https://adv-r.hadley.nz/debugging.html
+
+
+## Current status
+
+You should all have:
+
+- GitHub Desktop installed and logged in to your github.com account
+
+- The neatpkg package re-installed (there have been changes!):
+
+```{r eval=FALSE}
+install.packages("neatpkg", repos=c("https://cran.rstudio.com/","https://ku-awdc.github.io/drat/"))
+```
+
+- The basic structure for your own R package
+
+
+# Programming paradigms
+
+## Imperative / procedural
+
+The oldest programming paradigm, used by machine code, Fortran, BASIC, ALGOL etc
+
+- Imperative:
+  - One big script, code run from top to bottom
+
+- Procedural:
+  - Code is broken up into functions/procedures/subroutines
+
+. . .
+
+Common in C-like languages such as R.
+
+---
+
+Imperative (stochastic, discrete-time) SIR model:
+
+```{r}
+iters <- 10L; time <- 100L
+beta <- 0.01; gamma <- 0.1
+start <- list(S=99L, I=1L, R=0L)
+
+output <- as.list(1L:iters)
+for(i in seq_along(output)){
+  output[[i]] <- as.data.frame(c(list(Iter=i, Time=1L:time), start))
+  
+  for(t in 2L:time){
+    S <- output[[i]][["S"]][t-1]
+    I <- output[[i]][["I"]][t-1]
+    R <- output[[i]][["R"]][t-1]
+    
+    nI <- rbinom(1L, S, 1.0 - exp(-beta * I))
+    nR <- rbinom(1L, I, 1.0 - exp(-gamma))
+    
+    output[[i]][t,c("S","I","R")] <- c(S-nI, I+nI-nR, R+nR)
+  }
+}
+```
+
+---
+
+Procedural version:
+
+```{r}
+#' In sir_mod.R within your package, and with documentation!
+sir_mod <- function(iter, beta=0.01, gamma=0.1, time=100L,
+                    start = list(S=99L, I=1L, R=0L)){
+  output <- as.data.frame(c(list(Iter=iter, Time=1L:time), start))
+  for(t in 2L:time){
+    S <- output[["S"]][t-1]
+    I <- output[["I"]][t-1]
+    R <- output[["R"]][t-1]
+    
+    nI <- rbinom(1L, S, 1.0 - exp(-beta * I))
+    nR <- rbinom(1L, I, 1.0 - exp(-gamma))
+    
+    output[t,c("S","I","R")] <- c(S-nI, I+nI-nR, R+nR)
+  }
+  return(output)
+}
+
+## In a file somewhere under notebooks:
+output <- as.list(1L:10L)
+for(i in seq_along(output)){
+  output[[i]] <- sir_mod(i)
+}
+```
+
+---
+
+Benefits of using functions:
+
+- Encapsulation
+  - There is no `bleed-out' of temporary variables
+  - The sir_mod function can be documented, and re-used
+  - The sir_mod function can be tested
+
+. . .
+
+- Abstraction
+  - Separation of implementation from usage makes both clearer
+  - Future changes to sir_mod do not break other code
+
+
+## Functional
+
+- A relatively modern paradigm, used heavily by Lisp, Haskell, F# etc
+
+Features:
+- Functions are `first class citizens' i.e. are treated as variables
+- Avoid using temporary variables
+  - No for/repeat/while loops (recursion may be used)
+  - Functions are chained together
+
+. . .
+
+At it's core, R is actually a functional programming language...!
+
+Most obvious with tidyverse / dplyr / chaining.
+
+---
+
+A functional version:
+
+```{r echo=TRUE, include=FALSE}
+library("tidyverse")
+library("pbapply")
+```
+
+```{r}
+1L:iters |>
+  as.list() |>
+  pblapply(sir_mod) |>
+  bind_rows() |>
+  pivot_longer(cols = c("S","I","R"), names_to="Comp", values_to="N") |>
+  ggplot(aes(x=Time, y=N, col=Comp, group=interaction(Comp, Iter))) +
+  geom_line() +
+  theme_light() ->
+  plot_out
+```
+
+---
+
+```{r echo=FALSE}
+plot_out
+```
+
+
+## Object-oriented
+
+Originated with languages such as Simula, Smalltalk, C++ etc
+
+1. Functional OO in R:  S3, S4, R7
+
+1. Encapsulated OO in R:  ReferenceClasses, R6
+
+. . .
+
+Key features of encapsulated OO:
+
+- Classes form the core building blocks of code
+- Data and functions (aka methods) are encapsulated within the object
+- Structured (and typically strict) separation of implementation and usage
+- Inheritance allows derived classes to extend parent classes
+  - Run-time and/or compile-time polymorphism
+
+
+---
+
+Simple example in R6:
+
+```{r}
+library("R6")
+
+SimpleSIR <- R6Class("SimpleSIR",
+    public = list(
+      S = 99L,
+      I = 1L,
+      R = 0L,
+      
+      update = function(beta=0.01, gamma=0.1){
+        nI <- rbinom(1L, self$S, 1.0 - exp(-beta * self$I))
+        nR <- rbinom(1L, self$I, 1.0 - exp(-gamma))
+        self$S <- self$S-nI
+        self$I <- self$I+nI-nR
+        self$R <- self$R + nR
+      },
+      
+      print = function(){
+        cat("S:", self$S, ", I:", self$I, ", R:", self$R, "\n", sep="")
+      }
+    )
+)
+```
+
+---
+
+Creating an instance of the class:
+
+```{r}
+model_instance <- SimpleSIR$new()
+model_instance
+```
+
+Calling methods:
+
+```{r}
+model_instance$update()
+model_instance
+model_instance$update()
+model_instance
+```
+
+. . . 
+
+[More later]
+
+
+## Other programming paradigms
+
+Entity Component Systems (aka ECS)
+  - Similar to OO, except that data and methods are separate
+  - Performance advantages for some applications
+  - Typically implemented in compiled languages like C, C++, Rust
+
+. . .
+
+Declarative
+  - Languages that define relationships directly
+  - Statistical models e.g. lme4 syntax, BUGS/JAGS, NIMBLE, Stan
+  - Database languages e.g. SQL
+  - [Pure functional programming is a type of declarative]
+
+
+## Which style to choose?
+
+The important things are that code should be:
+
+- Encapsulated
+  - i.e. implementation and usage are separated
+
+- Robust
+  - i.e. documented and tested
+
+. . .
+
+What do I use?
+
+- Data cleaning and exploration -> functional
+
+- Statistical modelling -> declarative
+
+- Complex tasks like mechanistic simulation modelling -> encapsulated OO
+
+- Very simple sub-tasks within these -> procedural
+
+
+# A quick tour of R6
+
+## A more complex R6 class
+
+```{r}
+library("R6")
+
+SIRmodel <- R6Class("SIRmodel")
+
+SIRmodel$set("private", "time", numeric())
+SIRmodel$set("private", "S", numeric())
+SIRmodel$set("private", "I", numeric())
+SIRmodel$set("private", "R", numeric())
+
+SIRmodel$set("public", "initialize", 
+  function(S=99L, I=1L, R=0L){
+    "Initialize method with optional S/I/R compartment sizes"
+    private$S <- S; private$I <- I; private$R <- R
+    private$time <- 0L
+  }
+)
+```
+
+---
+
+```{r}
+SIRmodel$set("public", "update",
+  function(beta=0.01, gamma=0.1){
+    "Update method to increment time and process compartments"
+    private$time <- private$time + 1L
+    nI <- rbinom(1L, private$S, 1.0 - exp(-beta * private$I))
+    nR <- rbinom(1L, private$I, 1.0 - exp(-gamma))
+    private$S <- private$S-nI; private$I <- private$I+nI-nR; private$R <- private$R + nR
+    invisible(self)
+  }
+)
+
+
+SIRmodel$set("public", "print",
+  function(){
+    "Simple print method"
+    cat("Time:", private$time, ", S:", private$S, ", I:", private$I, ", R:", private$R, "\n", sep="")
+  }
+)
+```
+
+---
+
+Active bindings are cool:
+
+```{r}
+SIRmodel$set("active", "status",
+  function(){
+    "Read-only property for current status (Time/S/I/R)"
+    status <- tibble(Time=private$time, S=private$S, I=private$I, R=private$R)
+    return(status)
+  }
+)
+```
+
+. . .
+
+```{r}
+model_instance <- SIRmodel$new()
+model_instance$status
+model_instance$update()$status
+```
+
+## Assignment semantics
+
+Copying by simple assignment is shallow!
+
+```{r}
+model_instance_copy <- model_instance
+model_instance$update()$status
+model_instance_copy$status
+```
+
+---
+
+Use clone to create a deep copy:
+
+```{r}
+model_instance_clone <- model_instance$clone()
+model_instance$update()$status
+model_instance_clone$status
+```
+
+## Helper methods
+
+```{r}
+SIRmodel$set("public", "run",
+  function(times=100L, ...){
+    "Wrapper around the update method returning a tibble as output"
+    output <- matrix(NA_integer_, nrow=times, ncol=4L, dimnames=list(NULL, c("Time","S","I","R")))
+    for(t in seq_len(times)){
+      self$update(...)
+      output[t,] <- c(private$time,private$S,private$I,private$R)
+    }
+    return(as_tibble(output))
+  }
+)
+```
+
+. . .
+
+```{r}
+model_instance <- SIRmodel$new(S=99L, I=1L, R=0L)
+model_instance$run(3L)
+```
+
+---
+
+```{r}
+model_instance$run(3L)
+model_instance$run(4L)
+```
+
+
+## Combining R6 and S3
+
+It is possible (and beneficial) to use S3 dispatch with R6 classes:
+
+```{r}
+as_tibble.SIRmodel <- function(x, ...){
+  x$status
+}
+as_tibble(model_instance)
+```
+. . .
+
+You can also define the print method this way if you prefer.
+
+## Using R6 in an R package
+
+Run:
+
+```{r eval=FALSE}
+neatpkg::pkg_R6()
+```
+
+And look at the example_R6.R file
+
+. . .
+
+Notes:
+
+- Document R6 methods by providing text on the first line of the method
+- You should also document argument for methods BUT they are not checked by R CMD check unfortunately
+- It is sometimes easier to treat your R6 class as internal within the package, and export helper functions and/or S3 methods for external use
+
+# Exercise
+
+## Instructions
+
+1. Add an R6 class to your R package
+
+1. Alter the R6 class so that it implements the methods provided in this presentation
+
+1. Add some argument checking to the methods to ensure that provided arguments are sensible
+
+1. Add some tests under tests/testthat to ensure that your class doesn't produce garbage output
+
+1. Optional:  add a suitable autoplot method (see ?ggplot2::autoplot)
+
+```{r include=FALSE}
+unlink(cleanup)
+```

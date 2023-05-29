@@ -14,13 +14,13 @@ The current plan for topics to cover is:
   - Introduction to unit tests and R CMD check
   
 2. Wednesday 31st May (90 mins)
-  - Good programming practice:  encapsulation, version control, testing, vignettes, help files
   - Programming styles:  procedural vs functional vs object oriented
   - Introduction to R6
+  - Good programming practice:  encapsulation, version control, testing, vignettes, help files
   - Disease modelling using R6 (discrete-time mechanistic models)
-  - Inheritance and importing other packages
 
 3. Wednesday 14th June (90 mins + beers)
+  - R6, inheritance and importing other packages
   - Object-oriented disease modelling using BLOFELD
   - Modularising populations, spread mechanisms, control mechanisms, and book-keeping functions
   - TBC: iGraph, sf
