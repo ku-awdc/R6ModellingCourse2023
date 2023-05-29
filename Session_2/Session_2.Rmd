@@ -69,6 +69,8 @@ Everything is on the public GitHub repo:
 
 1. Remember to pull changes before each day, as things will be added
 
+1. Remember to copy/paste code from the HTML version, NOT the PDF version
+
 . . .
 
 You only have write access, so you can't push changes.  It is best not to modify anything in the course files (notes etc) in case you get conflicts pulling changes later...
