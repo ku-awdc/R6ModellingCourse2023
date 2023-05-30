@@ -533,6 +533,25 @@ as_tibble(model_instance)
 
 You can also define the print method this way if you prefer.
 
+## Private methods
+
+Use private fields / methods for internal implementation details, e.g.:
+
+```{r}
+SIRmodel$set("private", "secret", 42L)
+SIRmodel$set("private", "set_secret",
+  function(x){
+    private$secret <- x
+    cat("Secret set to:", x, "\n")
+    invisible(self)
+  }
+)
+```
+
+. . .
+
+This is important for encapsulation!!!
+
 ## Using R6 in an R package
 
 Run:
@@ -545,11 +564,35 @@ And look at the example_R6.R file
 
 . . .
 
-Notes:
+Notes for exporting R6 classes:
 
 - Document R6 methods by providing text on the first line of the method
 - You should also document argument for methods BUT they are not checked by R CMD check unfortunately
 - It is sometimes easier to treat your R6 class as internal within the package, and export helper functions and/or S3 methods for external use
+
+
+## Tips for working with R6
+
+- Avoid public fields: use active bindings to extract private fields instead
+
+- Beware of the private$tpyo problem:  use private %.% tpyo instead
+
+- Use both internal (private) methods and visible (public) methods
+  - Encapsulation!
+
+- Lock the class when you are done adding fields/methods
+
+- The debug() function works on methods just like regular functions
+
+- It IS possible to see private methods/fields externally, but you should ONLY use these for testing:
+
+```{r eval=FALSE}
+model_instance <- SIRmodel$new(S=99L, I=1L, R=0L)
+ls(model_instance$.__enclos_env__$private)
+model_instance$.__enclos_env__$private$secret
+```
+
+
 
 # Exercise
 
@@ -561,7 +604,7 @@ Notes:
 
 1. Add some argument checking to the methods to ensure that provided arguments are sensible
 
-1. Add some tests under tests/testthat to ensure that your class doesn't produce garbage output
+1. Add some more tests under tests/testthat to ensure that your class doesn't produce garbage output
 
 1. Optional:  add a suitable autoplot method (see ?ggplot2::autoplot)
 

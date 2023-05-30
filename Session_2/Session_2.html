@@ -843,13 +843,29 @@ as_tibble(model_instance)
 <p>You can also define the print method this way if you prefer.</p>
 </div>
 </div>
+<div id="private-methods" class="section level2">
+<h2>Private methods</h2>
+<p>Use private fields / methods for internal implementation details,
+e.g.:</p>
+<pre class="r"><code>SIRmodel$set(&quot;private&quot;, &quot;secret&quot;, 42L)
+SIRmodel$set(&quot;private&quot;, &quot;set_secret&quot;,
+  function(x){
+    private$secret &lt;- x
+    cat(&quot;Secret set to:&quot;, x, &quot;\n&quot;)
+    invisible(self)
+  }
+)</code></pre>
+<div class="incremental">
+<p>This is important for encapsulation!!!</p>
+</div>
+</div>
 <div id="using-r6-in-an-r-package" class="section level2">
 <h2>Using R6 in an R package</h2>
 <p>Run:</p>
 <pre class="r"><code>neatpkg::pkg_R6()</code></pre>
 <p>And look at the example_R6.R file</p>
 <div class="incremental">
-<p>Notes:</p>
+<p>Notes for exporting R6 classes:</p>
 <ul>
 <li>Document R6 methods by providing text on the first line of the
 method</li>
@@ -860,6 +876,28 @@ package, and export helper functions and/or S3 methods for external
 use</li>
 </ul>
 </div>
+</div>
+<div id="tips-for-working-with-r6" class="section level2">
+<h2>Tips for working with R6</h2>
+<ul>
+<li><p>Avoid public fields: use active bindings to extract private
+fields instead</p></li>
+<li><p>Beware of the private$tpyo problem: use private %.% tpyo
+instead</p></li>
+<li><p>Use both internal (private) methods and visible (public)
+methods</p>
+<ul>
+<li>Encapsulation!</li>
+</ul></li>
+<li><p>Lock the class when you are done adding fields/methods</p></li>
+<li><p>The debug() function works on methods just like regular
+functions</p></li>
+<li><p>It IS possible to see private methods/fields externally, but you
+should ONLY use these for testing:</p></li>
+</ul>
+<pre class="r"><code>model_instance &lt;- SIRmodel$new(S=99L, I=1L, R=0L)
+ls(model_instance$.__enclos_env__$private)
+model_instance$.__enclos_env__$private$secret</code></pre>
 </div>
 </div>
 <div id="exercise" class="section level1">
@@ -872,8 +910,8 @@ use</li>
 this presentation</p></li>
 <li><p>Add some argument checking to the methods to ensure that provided
 arguments are sensible</p></li>
-<li><p>Add some tests under tests/testthat to ensure that your class
-doesn’t produce garbage output</p></li>
+<li><p>Add some more tests under tests/testthat to ensure that your
+class doesn’t produce garbage output</p></li>
 <li><p>Optional: add a suitable autoplot method (see
 ?ggplot2::autoplot)</p></li>
 </ol>
