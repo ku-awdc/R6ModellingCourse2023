@@ -867,11 +867,12 @@ SIRmodel$set(&quot;private&quot;, &quot;set_secret&quot;,
 <div class="incremental">
 <p>Notes for exporting R6 classes:</p>
 <ul>
-<li>Document R6 methods by providing text on the first line of the
-method</li>
-<li>You should also document argument for methods BUT they are not
-checked by R CMD check unfortunately</li>
-<li>It is sometimes easier to treat your R6 class as internal within the
+<li>Documentation of R6 methods created using set() is not (currently)
+possible</li>
+<li>You can document argument for methods BUT the methods themselves are
+not shown due to me setting Roxygen: list(markdown = TRUE, r6 =
+FALSE)</li>
+<li>It may be easier to treat your R6 class as internal within the
 package, and export helper functions and/or S3 methods for external
 use</li>
 </ul>
